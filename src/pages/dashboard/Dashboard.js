@@ -6,18 +6,19 @@ import "../../styles/Dashboard.css";
 const Dashboard = () => {
   const [mediaFiles, setMediaFiles] = useState([]);
   const [file, setFile] = useState(null);
+  const [message, setMessage] = useState("");
   const [filterType, setFilterType] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6; // Pagination: 6 items per page
+  
   const user = useSelector((state) => state.auth.user);
 
-  const handleFileChange = (event) => {
-    setFile(event.target.files[0]);
-  };
-
+  
   // Fetch uploaded media
   useEffect(() => {
     fetchMedia();
   }, []);
-
+  
   const fetchMedia = async () => {
     try {
       const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/media`, {
@@ -28,14 +29,27 @@ const Dashboard = () => {
       console.error("Error fetching media:", error);
     }
   };
-
+  
+  const handleFileChange = (event) => {
+    setFile(event.target.files[0]);
+  };
   // Upload media
   const handleUpload = async (e) => {
     e.preventDefault();
-    if (!file) return;
+    if (!file) {
+      setMessage("Please select a file to upload.");
+      return;
+    }
+
+    const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/gif", "image/webp", "video/mp4", "video/avi", "video/mkv", "video/webm"];
 
     const formData = new FormData();
     formData.append("file", file);
+    if (!allowedTypes.includes(file.type)) {
+      alert("Invalid file type! Please upload an image or video.");
+      document.getElementById("fileInput").value = ""; 
+      return;
+    }
 
     try {
       const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/media/upload`, formData, {
@@ -45,11 +59,13 @@ const Dashboard = () => {
         },
       });
       if (response.status === 201) {
+        setMessage("File uploaded successfully!");
         setFile(null); // Reset state
         document.getElementById("fileInput").value = ""; // Clear input field
       }
       fetchMedia(); // Refresh media list
     } catch (error) {
+      setMessage("File upload failed. Try again.");
       console.error("Upload failed:", error);
     }
   };
@@ -68,6 +84,7 @@ const Dashboard = () => {
 
   const handleFilterChange = (event) => {
     setFilterType(event.target.value);
+    setCurrentPage(1);
   };
 
 
@@ -78,34 +95,56 @@ const Dashboard = () => {
     return false;
   });
 
+
+  const totalPages = Math.ceil(filteredMedia.length / itemsPerPage);
+  const paginatedMedia = filteredMedia.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   return (
     <div className="dashboard-container">
-      <h2>Media Dashboard</h2>
-
-      <form onSubmit={handleUpload} className="upload-form">
-        <input type="file" id="fileInput" onChange={(e) => setFile(e.target.files[0])} required />
+      <h2>Media Upload & Gallery</h2>
+      <div className="upload-section">
+        <input type="file" id="fileInput" onChange={handleFileChange} />
         <button onClick={handleUpload}>Upload</button>
-      </form>
+        <p>{message}</p>
+      </div>
 
-      <h3>Filter Media</h3>
-      <select onChange={handleFilterChange} value={filterType}>
-        <option value="all">All</option>
-        <option value="image">Images</option>
-        <option value="video">Videos</option>
-      </select>
+      <div className="filter-section">
+        <label>Filter by Type:</label>
+        <select onChange={handleFilterChange} value={filterType}>
+          <option value="all">All</option>
+          <option value="image">Images</option>
+          <option value="video">Videos</option>
+        </select>
+      </div>
 
       <div className="media-gallery">
-        {filteredMedia.map((media) => (
-          <div key={media._id} className="media-item">
-            {media.type.startsWith("image") ? (
-              <img src={media.url} alt="Uploaded" className="media-preview" />
+        {paginatedMedia.map((item) => (
+          <div key={item._id} className="media-item">
+            {item.type.startsWith("image") ? (
+              <img src={item.url} alt={item.filename} />
             ) : (
-              <video src={media.url} controls className="media-preview"></video>
+              <video controls>
+                <source src={item.url} type={item.fileType} />
+              </video>
             )}
-            <button className="delete-button" onClick={() => handleDelete(media._id)}>
-              Delete
-            </button>
+            <button onClick={() => handleDelete(item._id)}>Delete</button>
           </div>
+        ))}
+      </div>
+
+      {/* Pagination */}
+      <div className="pagination">
+        {Array.from({ length: totalPages }, (_, index) => (
+          <button
+            key={index}
+            className={currentPage === index + 1 ? "active" : ""}
+            onClick={() => setCurrentPage(index + 1)}
+          >
+            {index + 1}
+          </button>
         ))}
       </div>
     </div>
