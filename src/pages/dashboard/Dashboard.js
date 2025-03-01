@@ -6,6 +6,8 @@ import "../../styles/Dashboard.css";
 const Dashboard = () => {
   const [mediaFiles, setMediaFiles] = useState([]);
   const [file, setFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null);
   const [message, setMessage] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -32,6 +34,35 @@ const Dashboard = () => {
   
   const handleFileChange = (event) => {
     setFile(event.target.files[0]);
+    const file = event.target.files[0];
+    setMessage("")
+    if (!file) {
+      alert("Please select a file.");
+      return;
+    }
+    const allowedTypes = [
+      "image/png",
+      "image/jpeg",
+      "image/jpg",
+      "image/gif",
+      "image/webp",
+      "video/mp4",
+      "video/avi",
+      "video/mkv",
+      "video/webm",
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      alert("Invalid file type! Please upload an image or video.");
+      event.target.value = ""; // Clear input
+      return;
+    }
+
+    setSelectedFile(file);
+
+    // Generate preview URL
+    const fileUrl = URL.createObjectURL(file);
+    setPreviewUrl(fileUrl);
   };
   // Upload media
   const handleUpload = async (e) => {
@@ -61,7 +92,11 @@ const Dashboard = () => {
       if (response.status === 201) {
         setMessage("File uploaded successfully!");
         setFile(null); // Reset state
+        setPreviewUrl("");
         document.getElementById("fileInput").value = ""; // Clear input field
+        setTimeout(() => {
+          setMessage("")
+        },5000)
       }
       fetchMedia(); // Refresh media list
     } catch (error) {
@@ -106,9 +141,18 @@ const Dashboard = () => {
     <div className="dashboard-container">
       <h2>Media Upload & Gallery</h2>
       <div className="upload-section">
-        <input type="file" id="fileInput" onChange={handleFileChange} />
+        <input type="file" id="fileInput" accept="image/*,video/*" onChange={handleFileChange} />
         <button onClick={handleUpload}>Upload</button>
         <p>{message}</p>
+        {previewUrl && (
+        <div className="preview-container">
+          {selectedFile.type.startsWith("image/") ? (
+            <img src={previewUrl} alt="Preview" className="preview" />
+          ) : (
+            <video src={previewUrl} controls className="preview"></video>
+          )}
+        </div>
+      )}
       </div>
 
       <div className="filter-section">
