@@ -17,7 +17,7 @@ const Dashboard = () => {
   // Fetch uploaded media
   useEffect(() => {
     fetchMedia();
-  }, []);
+  }, );
   
   const fetchMedia = async () => {
     try {
