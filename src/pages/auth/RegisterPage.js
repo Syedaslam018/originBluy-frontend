@@ -14,7 +14,7 @@ const RegisterPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const response = await dispatch(registerUser({ username, email, password }));
-    if (response.success) navigate('');
+    if (response.success) navigate('/');
   };
 
   return (
@@ -26,7 +26,7 @@ const RegisterPage = () => {
         <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         <button type="submit">Register</button>
       </form>
-      <p>Already have an account? <a href="">Login</a></p>
+      <p>Already have an account? <a href="/">Login</a></p>
     </div>
   );
 };
